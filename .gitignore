@@ -1,0 +1,7 @@
+debug
+.vscode
+*.exe
+
+# external packages folder
+vendor/*/
+!vendor/vendor.json

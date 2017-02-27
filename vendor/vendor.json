@@ -1,0 +1,55 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "060XImwQrvruBsOwO7r5dRjCJN4=",
+			"path": "github.com/alecthomas/kingpin",
+			"revision": "bf17db2c43f59ff3d97a39d1feacef18d75eaf95",
+			"revisionTime": "2017-02-17T22:05:30Z"
+		},
+		{
+			"checksumSHA1": "KmjnydoAbofMieIWm+it5OWERaM=",
+			"path": "github.com/alecthomas/template",
+			"revision": "a0175ee3bccc567396460bf5acd36800cb10c49c",
+			"revisionTime": "2016-04-05T07:15:01Z"
+		},
+		{
+			"checksumSHA1": "3wt0pTXXeS+S93unwhGoLIyGX/Q=",
+			"path": "github.com/alecthomas/template/parse",
+			"revision": "a0175ee3bccc567396460bf5acd36800cb10c49c",
+			"revisionTime": "2016-04-05T07:15:01Z"
+		},
+		{
+			"checksumSHA1": "fCc3grA7vIxfBru7R3SqjcW+oLI=",
+			"path": "github.com/alecthomas/units",
+			"revision": "2efee857e7cfd4f3d0138cc3cbb1b4966962b93a",
+			"revisionTime": "2015-10-22T06:55:26Z"
+		},
+		{
+			"checksumSHA1": "16fWSep+3jUx8wADdbiTxSHjW14=",
+			"path": "github.com/fatih/color",
+			"revision": "7824417a424b65227be8ac9b14d545a7f3e6c3f0",
+			"revisionTime": "2017-02-17T09:50:16Z"
+		},
+		{
+			"checksumSHA1": "QPtwwLkTyoqQoigevgprwudIdXk=",
+			"path": "github.com/mattn/go-colorable",
+			"revision": "d898aa9fb31c91f35dd28ca75db377eff023c076",
+			"revisionTime": "2017-02-21T00:41:37Z"
+		},
+		{
+			"checksumSHA1": "Jyv1TH1YHrCVewmVE8FgSh1+92s=",
+			"path": "github.com/mattn/go-isatty",
+			"revision": "dda3de49cbfcec471bd7a70e6cc01fcc3ff90109",
+			"revisionTime": "2017-02-16T23:59:08Z"
+		},
+		{
+			"checksumSHA1": "oVd5OHIvNHR5bhUvnBMPLVjaL6E=",
+			"path": "golang.org/x/sys/unix",
+			"revision": "e4594059fe4cde2daf423055a596c2cd1e6c9adf",
+			"revisionTime": "2017-02-23T22:36:15Z"
+		}
+	],
+	"rootPath": "github.com/mkobaly/esdeploy"
+}
