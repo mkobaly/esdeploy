@@ -51,7 +51,7 @@ func main() {
 		if *dPath == "" {
 			*dPath, _ = os.Getwd()
 		}
-		color.Yellow("About to perform dry run against %v", *dURL)
+		color.Yellow("About to perform deployment against %v", *dURL)
 		color.Yellow("Folder containing schema files is %v", *dPath)
 
 		if *dSilent == false {
