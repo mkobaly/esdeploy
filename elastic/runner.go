@@ -7,6 +7,12 @@ import (
 	"path/filepath"
 )
 
+// ValidationResult is the result of validating a schema file
+type ValidationResult struct {
+	File    string
+	IsValid bool
+}
+
 // Runner handles the coordination of applying elastic search schema changes
 type Runner struct {
 	SchemaChanger SchemaChanger
@@ -77,93 +83,22 @@ func (r *Runner) DryRun() ([]string, error) {
 	return results, nil
 }
 
-//esObjectExists will send a HEAD request to ES to verify if an object (index, document) exists
-// func (r *Runner) esObjectExists(path string) (bool, error) {
-// 	url := fmt.Sprintf("%s%s", r.ServerUrl, path)
-
-// 	req, _ := http.NewRequest("HEAD", url, nil)
-
-// 	resp, err := r.HTTPClient.Do(req)
-// 	if err != nil {
-// 		if resp.StatusCode == 200 {
-// 			return true, nil
-// 		}
-// 	}
-// 	return false, err
-// }
-
-// func (r *Runner) schemaChangeAlreadyRun(s *SchemaChange) (bool, error) {
-// 	url := fmt.Sprintf("%s%s%s", r.ServerUrl, "version_info/", s.ID)
-// 	req, _ := http.NewRequest("HEAD", url, nil)
-// 	resp, err := r.HTTPClient.Do(req)
-// 	if err != nil {
-// 		if resp.StatusCode == 200 {
-// 			return true, nil
-// 		}
-// 	}
-// 	return false, err
-// }
-
-// func (r *Runner) applySchemaChange(a Action) (string, error) {
-
-// 	url := fmt.Sprintf("%s%s", r.ServerUrl, a.URL)
-// 	var body io.Reader
-// 	if a.JSON != "" {
-// 		body = bytes.NewBuffer([]byte(a.JSON))
-// 	}
-// 	req, _ := http.NewRequest(a.HTTPVerb, url, body)
-// 	req.Header.Add("Accept", "application/json")
-
-// 	if body != nil {
-// 		req.Header.Add("Content-Type", "application/json")
-// 	}
-
-// 	resp, err := r.HTTPClient.Do(req)
-// 	defer resp.Body.Close()
-
-// 	if err != nil {
-// 		if resp.StatusCode == 200 {
-// 			return "", nil
-// 		}
-// 		bodyBytes, err2 := ioutil.ReadAll(resp.Body)
-// 		if err2 != nil {
-// 			return "", err2
-// 		}
-// 		bodyString := string(bodyBytes)
-// 		return bodyString, ErrSchemaChange
-// 	}
-
-// 	return "", err
-// }
-
-// func (r *Runner) SendRequest(method string, path string, data interface{}) ([]byte, error) {
-
-// 	url := fmt.Sprintf("%s%s", r.ServerUrl, path)
-// 	var body io.Reader
-// 	if data != nil {
-// 		jsonReq, err := json.Marshal(data)
-// 		if err != nil {
-// 			return nil, fmt.Errorf("marshaling data: %s", err)
-// 		}
-// 		body = bytes.NewBuffer(jsonReq)
-// 	}
-
-// 	req, _ := http.NewRequest(method, url, body)
-// 	//req.SetBasicAuth(c.username, c.password)
-// 	req.Header.Add("Accept", "application/json")
-
-// 	if body != nil {
-// 		req.Header.Add("Content-Type", "application/json")
-// 	}
-
-// 	resp, err := r.HTTPClient.Do(req)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	defer resp.Body.Close()
-
-// 	return ioutil.ReadAll(resp.Body)
-// }
+//Validate will ensure all schema files are following
+//the required format and are valid
+func (r *Runner) Validate() ([]ValidationResult, error) {
+	var results []ValidationResult
+	files := getFiles(r.Directory)
+	for _, file := range files {
+		s := NewSchemaChange(file)
+		err := s.Action.Validate()
+		if err != nil {
+			results = append(results, ValidationResult{File: file, IsValid: false})
+			continue
+		}
+		results = append(results, ValidationResult{File: file, IsValid: true})
+	}
+	return results, nil
+}
 
 func getFiles(dir string) []string {
 	fileList := []string{}

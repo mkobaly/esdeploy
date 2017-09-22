@@ -20,6 +20,9 @@ var (
 	drURL  = drCmd.Arg("url", "Elastic Search URL to run against").Required().String()
 	drPath = drCmd.Flag("folder", "Folder containing schema js files").Short('f').Default(".").String()
 
+	validateCmd  = app.Command("validate", "Performs a validation of all files to ensure they are properly formatted")
+	validatePath = validateCmd.Flag("folder", "Folder containing schema js files").Short('f').Default(".").String()
+
 	deployCmd = app.Command("deploy", "Deploy elastic search changes")
 	dURL      = deployCmd.Arg("url", "Elastic Search URL to run against").Required().String()
 	dPath     = deployCmd.Flag("folder", "Folder containing schema js files").Short('f').Default(".").String()
@@ -28,13 +31,33 @@ var (
 
 func main() {
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
+	case validateCmd.FullCommand():
+		if *validatePath == "" {
+			*validatePath, _ = os.Getwd()
+		}
+		color.Cyan("Running validation against folder %v", *validatePath)
+		esRunner := elastic.NewRunner(*validatePath, nil)
+		results, err := esRunner.Validate()
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, r := range results {
+			if !r.IsValid {
+				color.Red("FILE INVALID: %s", r.File)
+				continue
+			}
+			color.Green("File Valid: %s", r.File)
+		}
+
+		color.Cyan("Validation completed")
+
 	case drCmd.FullCommand():
 		if *drPath == "" {
 			*drPath, _ = os.Getwd()
 		}
 
-		color.Yellow("Running dry run against %v", *drURL)
-		color.Yellow("Folder containing schema files is %v", *drPath)
+		color.Cyan("Running dry run against %v", *drURL)
+		color.Cyan("Folder containing schema files is %v", *drPath)
 
 		schemaChanger := elastic.NewEsSchemaChanger(*drURL)
 		esRunner := elastic.NewRunner(*drPath, schemaChanger)
@@ -45,17 +68,17 @@ func main() {
 		for _, r := range results {
 			color.Green("%v", r)
 		}
-		color.Green("Dry Run completed")
+		color.Cyan("Dry Run completed")
 
 	case deployCmd.FullCommand():
 		if *dPath == "" {
 			*dPath, _ = os.Getwd()
 		}
-		color.Yellow("About to perform deployment against %v", *dURL)
-		color.Yellow("Folder containing schema files is %v", *dPath)
+		color.Cyan("About to perform deployment against %v", *dURL)
+		color.Cyan("Folder containing schema files is %v", *dPath)
 
 		if *dSilent == false {
-			color.Cyan("Do you want to proceed? Yes(Y) or No(N)")
+			color.Yellow("Do you want to proceed? Yes(Y) or No(N)")
 			var input string
 			fmt.Scanln(&input)
 			if strings.ToUpper(input) == "N" {
@@ -73,6 +96,6 @@ func main() {
 		for _, r := range results {
 			color.Green("%v", r)
 		}
-		color.Green("Deploy completed")
+		color.Cyan("Deploy completed")
 	}
 }
