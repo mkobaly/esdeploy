@@ -35,21 +35,21 @@ func main() {
 		if *validatePath == "" {
 			*validatePath, _ = os.Getwd()
 		}
+		exit := 0
 		color.Cyan("Running validation against folder %v", *validatePath)
 		esRunner := elastic.NewRunner(*validatePath, nil)
-		results, err := esRunner.Validate()
-		if err != nil {
-			log.Fatal(err)
-		}
+		results := esRunner.Validate()
 		for _, r := range results {
 			if !r.IsValid {
 				color.Red("FILE INVALID: %s", r.File)
+				exit = 1
 				continue
 			}
 			color.Green("File Valid: %s", r.File)
 		}
 
 		color.Cyan("Validation completed")
+		os.Exit(exit)
 
 	case drCmd.FullCommand():
 		if *drPath == "" {

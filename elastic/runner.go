@@ -85,7 +85,7 @@ func (r *Runner) DryRun() ([]string, error) {
 
 //Validate will ensure all schema files are following
 //the required format and are valid
-func (r *Runner) Validate() ([]ValidationResult, error) {
+func (r *Runner) Validate() []ValidationResult {
 	var results []ValidationResult
 	files := getFiles(r.Directory)
 	for _, file := range files {
@@ -97,7 +97,7 @@ func (r *Runner) Validate() ([]ValidationResult, error) {
 		}
 		results = append(results, ValidationResult{File: file, IsValid: true})
 	}
-	return results, nil
+	return results
 }
 
 func getFiles(dir string) []string {
