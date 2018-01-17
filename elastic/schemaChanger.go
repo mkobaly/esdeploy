@@ -3,6 +3,7 @@ package elastic
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -12,6 +13,22 @@ import (
 	"strings"
 	"time"
 )
+
+// Creds are the credentials needed to authenticate to Elastic Search. Only
+// needed if you have X-Pack basic authentication enabled for elastic search
+type Creds struct {
+	Username string
+	Password string
+}
+
+// AuthorizationNeeded determins if authorization is needed or not
+// Determined by if the user passed in username & password
+func (c Creds) AuthorizationNeeded() bool {
+	if c.Username != "" && c.Password != "" {
+		return true
+	}
+	return false
+}
 
 // SchemaChanger is the interface that handles applying schema changes
 // to backend storage systems
@@ -24,16 +41,18 @@ type SchemaChanger interface {
 type EsSchemaChanger struct {
 	ServerURL  string
 	HTTPClient *http.Client
+	Creds      Creds
 }
 
 // NewEsSchemaChanger creates Elastic Search Schema changer
-func NewEsSchemaChanger(serverURL string) *EsSchemaChanger {
+func NewEsSchemaChanger(serverURL string, creds Creds) *EsSchemaChanger {
 	if !strings.HasSuffix(serverURL, "/") {
 		serverURL += "/"
 	}
 	sc := &EsSchemaChanger{
 		HTTPClient: http.DefaultClient,
 		ServerURL:  serverURL,
+		Creds:      creds,
 	}
 	sc.initialize()
 	return sc
@@ -43,6 +62,11 @@ func NewEsSchemaChanger(serverURL string) *EsSchemaChanger {
 func (s *EsSchemaChanger) WasApplied(id string) (bool, error) {
 	url := fmt.Sprintf("%s%s/%s/%s", s.ServerURL, index, esType, id)
 	req, _ := http.NewRequest("HEAD", url, nil)
+
+	if s.Creds.AuthorizationNeeded() {
+		req.SetBasicAuth(s.Creds.Username, s.Creds.Password)
+	}
+
 	resp, err := s.HTTPClient.Do(req)
 	if err != nil {
 		return false, err
@@ -50,7 +74,11 @@ func (s *EsSchemaChanger) WasApplied(id string) (bool, error) {
 	if resp.StatusCode == 200 {
 		return true, nil
 	}
-	return false, nil
+	if resp.StatusCode == 404 {
+		return false, nil
+	}
+
+	return false, errors.New(resp.Status)
 }
 
 // Apply will apply the schema change to Elastic Search
@@ -64,13 +92,15 @@ func (s *EsSchemaChanger) Apply(sc *SchemaChange) error {
 	req, _ := http.NewRequest(sc.Action.HTTPVerb, url, body)
 	req.Header.Add("Accept", "application/json")
 
+	if s.Creds.AuthorizationNeeded() {
+		req.SetBasicAuth(s.Creds.Username, s.Creds.Password)
+	}
+
 	if body != nil {
 		req.Header.Add("Content-Type", "application/json")
 	}
 
 	resp, err := s.HTTPClient.Do(req)
-	defer resp.Body.Close()
-
 	if err != nil || resp.StatusCode != 200 {
 		bodyBytes, err2 := ioutil.ReadAll(resp.Body)
 		if err2 != nil {
@@ -81,6 +111,7 @@ func (s *EsSchemaChanger) Apply(sc *SchemaChange) error {
 			Message: bodyString,
 		}
 	}
+	defer resp.Body.Close()
 
 	// successfully applied schema so now track its completed
 	return s.markScheamaChangeComplete(sc)
@@ -99,6 +130,10 @@ func (s *EsSchemaChanger) markScheamaChangeComplete(sc *SchemaChange) error {
 	json, _ := json.Marshal(v)
 	body := bytes.NewBuffer(json)
 	req, _ := http.NewRequest("POST", url, body)
+	req.Header.Add("Content-Type", "application/json")
+	if s.Creds.AuthorizationNeeded() {
+		req.SetBasicAuth(s.Creds.Username, s.Creds.Password)
+	}
 	resp, err := s.HTTPClient.Do(req)
 	if err != nil {
 		return err
@@ -126,6 +161,7 @@ func (s *EsSchemaChanger) initialize() {
 	if resp.StatusCode == 404 {
 		body := bytes.NewBuffer([]byte(typeDefinition))
 		req, _ = http.NewRequest("PUT", url, body)
+		req.Header.Add("Content-Type", "application/json")
 		resp, err = s.HTTPClient.Do(req)
 		if err != nil {
 			log.Fatal(err)

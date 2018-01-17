@@ -14,9 +14,11 @@ import (
 )
 
 var (
-	app = kingpin.New("esdeploy", "A command-line deployment tool to version Elastic Search.")
+	app         = kingpin.New("esdeploy", "A command-line deployment tool to version ElasticSearch.")
+	appUser     = app.Flag("username", "Username to authenticate with").Short('u').String()
+	appPassword = app.Flag("password", "Password to authenticat with").Short('p').String()
 
-	drCmd  = app.Command("dryrun", "Performs a dry run listing out changes that would be made")
+	drCmd  = app.Command("dryrun", "Only lists out changes that would be made to ElasticSearch.")
 	drURL  = drCmd.Arg("url", "Elastic Search URL to run against").Required().String()
 	drPath = drCmd.Flag("folder", "Folder containing schema js files").Short('f').Default(".").String()
 
@@ -30,7 +32,10 @@ var (
 )
 
 func main() {
+	var cred elastic.Creds
+
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
+	//Validation
 	case validateCmd.FullCommand():
 		if *validatePath == "" {
 			*validatePath, _ = os.Getwd()
@@ -50,7 +55,7 @@ func main() {
 
 		color.Cyan("Validation completed")
 		os.Exit(exit)
-
+	//Dry run
 	case drCmd.FullCommand():
 		if *drPath == "" {
 			*drPath, _ = os.Getwd()
@@ -59,7 +64,7 @@ func main() {
 		color.Cyan("Running dry run against %v", *drURL)
 		color.Cyan("Folder containing schema files is %v", *drPath)
 
-		schemaChanger := elastic.NewEsSchemaChanger(*drURL)
+		schemaChanger := elastic.NewEsSchemaChanger(*drURL, cred)
 		esRunner := elastic.NewRunner(*drPath, schemaChanger)
 		results, err := esRunner.DryRun()
 		if err != nil {
@@ -69,11 +74,16 @@ func main() {
 			color.Green("%v", r)
 		}
 		color.Cyan("Dry Run completed")
-
+	//Full deployment
 	case deployCmd.FullCommand():
 		if *dPath == "" {
 			*dPath, _ = os.Getwd()
 		}
+
+		if *appUser != "" && *appPassword != "" {
+			cred = elastic.Creds{Username: *appUser, Password: *appPassword}
+		}
+
 		color.Cyan("About to perform deployment against %v", *dURL)
 		color.Cyan("Folder containing schema files is %v", *dPath)
 
@@ -86,10 +96,13 @@ func main() {
 			}
 		}
 
-		schemaChanger := elastic.NewEsSchemaChanger(*dURL)
+		schemaChanger := elastic.NewEsSchemaChanger(*dURL, cred)
 		esRunner := elastic.NewRunner(*dPath, schemaChanger)
 		results, err := esRunner.Deploy()
 		if err != nil {
+			for _, r := range results {
+				color.Red("%v", r)
+			}
 			color.Red(err.Error())
 			os.Exit(1)
 		}
