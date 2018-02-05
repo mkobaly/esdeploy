@@ -29,6 +29,10 @@ var (
 	dURL      = deployCmd.Arg("url", "Elastic Search URL to run against").Required().String()
 	dPath     = deployCmd.Flag("folder", "Folder containing schema js files").Short('f').Default(".").String()
 	dSilent   = deployCmd.Flag("silent", "Don't prompt for confirmation, run silently").Short('s').Bool()
+
+	seedCmd  = app.Command("seed", "Seed elastic search with data stored in json files")
+	seedURL  = seedCmd.Arg("url", "Elastic Search URL to run against").Required().String()
+	seedPath = seedCmd.Flag("folder", "Folder containing json data files").Short('f').Default(".").String()
 )
 
 func main() {
@@ -110,5 +114,23 @@ func main() {
 			color.Green("%v", r)
 		}
 		color.Cyan("Deploy completed")
+	//Seed data
+	case seedCmd.FullCommand():
+		if *seedPath == "" {
+			*seedPath, _ = os.Getwd()
+		}
+
+		color.Cyan("Seeding data against %v", *seedURL)
+		color.Cyan("Folder containing data files is %v", *seedPath)
+
+		seeder := elastic.NewSeeder(*seedPath, *seedURL, cred)
+		results, err := seeder.Seed()
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, r := range results {
+			color.Green("%v", r)
+		}
+		color.Cyan("Seeding completed")
 	}
 }

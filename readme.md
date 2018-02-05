@@ -6,6 +6,8 @@ follows convention over configuration. The goal is to treat your schema changes 
 that represents the change. Best practices suggest those files should be checked into source control allowing for repeatable versioning of your
 Elastic Search backend across all environments (development, staging, production)
 
+There is also an option to seed Elasticsearch with data as well. (See seeding data below)
+
 ## Conventions
 - Scripts are only applied once and never run a second time.
 - Scripts are run in the order they are represented on disk (sorted alphabetically).
@@ -24,23 +26,31 @@ Elastic Search backend across all environments (development, staging, production
 
 ```
 $ esdeploy --help
-usage: deploy [<flags>] <command> [<args> ...]
+usage: esdeploy [<flags>] <command> [<args> ...]
 
-A command-line deployment tool to version Elastic Search.
+A command-line deployment tool to version ElasticSearch.
 
 Flags:
-  --help  Show context-sensitive help (also try --help-long and --help-man).
+      --help               Show context-sensitive help (also try --help-long and
+                           --help-man).
+  -u, --username=USERNAME  Username to authenticate with
+  -p, --password=PASSWORD  Password to authenticat with
 
 Commands:
   help [<command>...]
     Show help.
 
   dryrun [<flags>] <url>
-    Performs a dry run listing out changes that would be made
+    Only lists out changes that would be made to ElasticSearch.
+
+  validate [<flags>]
+    Performs a validation of all files to ensure they are properly formatted
 
   deploy [<flags>] <url>
     Deploy elastic search changes
 
+  seed [<flags>] <url>
+    Seed elastic search with data stored in json files
 ```
 
 ## JS File Standard
@@ -95,21 +105,18 @@ can then be used for this script without alteration.
 ## dryrun
 Will perform a dry run first validating your scripts and informing you of what scripts will be applied
 
-### Parameters
-- url: Url of Elastic Search server. Should be in format of http://[server]:port. (Required)
-
-- folder: Location of scripts. If not supplied then the current executing folder will be used (Optional)
-
 ```
 $ esdeploy dryrun --help
 usage: esdeploy dryrun [<flags>] <url>
 
-Performs a dry run listing out changes that would be made
+Only lists out changes that would be made to ElasticSearch.
 
 Flags:
-      --help        Show context-sensitive help (also try --help-long and
-                    --help-man).
-  -f, --folder="."  Folder containing schema js files
+      --help               Show context-sensitive help (also try --help-long and
+                           --help-man).
+  -u, --username=USERNAME  Username to authenticate with
+  -p, --password=PASSWORD  Password to authenticat with
+  -f, --folder="."         Folder containing schema js files
 
 Args:
   <url>  Elastic Search URL to run against
@@ -124,15 +131,6 @@ esdeploy dryrun http://localhost:9200 -f ./escripts
 ## deploy
 Will deploy your scripts to ElasticSearch and list out changes applied
 
-### Parameters
-- url: Url of Elastic Search server. Should be in format of http://[server]:port. (Required)
-
-- folder (f): Location of scripts. If not supplied then the current executing folder will be used (Optional)
-
-- silent (s): Don't prompt for confirmation of deploying changes.
-
-
-
 ```
 $ esdeploy deploy --help
 usage: esdeploy deploy [<flags>] <url>
@@ -140,10 +138,12 @@ usage: esdeploy deploy [<flags>] <url>
 Deploy elastic search changes
 
 Flags:
-      --help        Show context-sensitive help (also try --help-long and
-                    --help-man).
-  -f, --folder="."  Folder containing schema js files
-  -s, --silent      Don't prompt for confirmation, run silently
+      --help               Show context-sensitive help (also try --help-long and
+                           --help-man).
+  -u, --username=USERNAME  Username to authenticate with
+  -p, --password=PASSWORD  Password to authenticat with
+  -f, --folder="."         Folder containing schema js files
+  -s, --silent             Don't prompt for confirmation, run silently
 
 Args:
   <url>  Elastic Search URL to run against
@@ -155,4 +155,58 @@ esdeploy deploy http://localhost:9200 -f ./escripts -s
 
 ```
 
+## validate
+Will validate to ensure schema files are valid
 
+
+```
+$ esdeploy validate --help
+usage: esdeploy validate [<flags>]
+
+Performs a validation of all files to ensure they are properly formatted
+
+Flags:
+      --help               Show context-sensitive help (also try --help-long and
+                           --help-man).
+  -u, --username=USERNAME  Username to authenticate with
+  -p, --password=PASSWORD  Password to authenticat with
+  -f, --folder="."         Folder containing schema js files
+
+
+Example:
+--------
+
+esdeploy validate -f ./escripts
+
+```
+
+## seed
+Will seed elastic search with documents
+
+## JS File Standard
+- First line is the partial URL to elastic resource (See example below)
+- Rest of file contains JSON used to make schema change
+- All requests are PUTS
+
+```
+$ esdeploy seed --help
+usage: esdeploy seed [<flags>] <url>
+
+Seed elastic search with data stored in json files
+
+Flags:
+      --help               Show context-sensitive help (also try --help-long and
+                           --help-man).
+  -u, --username=USERNAME  Username to authenticate with
+  -p, --password=PASSWORD  Password to authenticat with
+  -f, --folder="."         Folder containing json data files
+
+Args:
+  <url>  Elastic Search URL to run against
+
+Example:
+--------
+
+esdeploy seed -f ./esdata
+
+```
