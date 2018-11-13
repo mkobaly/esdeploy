@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // Seeder handles seeding elastic search with data
@@ -37,14 +38,35 @@ func NewSeeder(directory string, serverURL string, creds Creds) *Seeder {
 // and apply that document against elastic search
 func (s *Seeder) Seed() ([]string, error) {
 	var results []string
+	now := time.Now()
+	p := filepath.Join(s.Directory, "poison", now.Format("20060102150405"))
+
+	if _, err := os.Stat(p); os.IsNotExist(err) {
+		err := os.MkdirAll(p, 0777)
+		if err != nil {
+			log.Panic(err)
+		}
+	}
+
 	files := s.getFiles(s.Directory)
 	for _, file := range files {
+
+		pd := getPoisonSubDir(p, file)
 		a := s.getAction(file)
 		err := s.execute(a)
+
 		if err != nil {
 			results = append(results, "Error: "+file)
-			d, f := filepath.Split(file)
-			err := os.Rename(file, filepath.Join(d, "poison", f))
+			_, f := filepath.Split(file)
+
+			if _, err := os.Stat(pd); os.IsNotExist(err) {
+				err := os.Mkdir(pd, 0777)
+				if err != nil {
+					log.Panic(err)
+				}
+			}
+
+			err := os.Rename(file, filepath.Join(pd, f))
 			if err != nil {
 				results = append(results, "Error moving to poison folder: "+file+"\n"+err.Error())
 			}
@@ -134,4 +156,11 @@ func (s *Seeder) getAction(esFile string) Action {
 		URL:      url,
 		JSON:     body.String(),
 	}
+}
+
+func getPoisonSubDir(poisonDir, file string) string {
+	dir := filepath.Dir(file)
+	_, dn := filepath.Split(dir) // get the parent dir name only
+	posDir := filepath.Join(poisonDir, dn)
+	return posDir
 }
