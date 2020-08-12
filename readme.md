@@ -35,6 +35,7 @@ Flags:
                            --help-man).
   -u, --username=USERNAME  Username to authenticate with
   -p, --password=PASSWORD  Password to authenticat with
+  -k, --insecure           Ignore SSL certificate warnings
 
 Commands:
   help [<command>...]
