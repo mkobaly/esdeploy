@@ -17,6 +17,7 @@ var (
 	app         = kingpin.New("esdeploy", "A command-line deployment tool to version ElasticSearch.")
 	appUser     = app.Flag("username", "Username to authenticate with").Short('u').String()
 	appPassword = app.Flag("password", "Password to authenticat with").Short('p').String()
+	appInsecure = app.Flag("insecure", "Ignore SSL certificate warnings").Short('k').Bool()
 
 	drCmd  = app.Command("dryrun", "Only lists out changes that would be made to ElasticSearch.")
 	drURL  = drCmd.Arg("url", "Elastic Search URL to run against").Required().String()
@@ -68,7 +69,7 @@ func main() {
 		color.Cyan("Running dry run against %v", *drURL)
 		color.Cyan("Folder containing schema files is %v", *drPath)
 
-		schemaChanger := elastic.NewEsSchemaChanger(*drURL, cred)
+		schemaChanger := elastic.NewEsSchemaChanger(*drURL, cred, *appInsecure)
 		esRunner := elastic.NewRunner(*drPath, schemaChanger)
 		results, err := esRunner.DryRun()
 		if err != nil {
@@ -100,7 +101,7 @@ func main() {
 			}
 		}
 
-		schemaChanger := elastic.NewEsSchemaChanger(*dURL, cred)
+		schemaChanger := elastic.NewEsSchemaChanger(*dURL, cred, *appInsecure)
 		esRunner := elastic.NewRunner(*dPath, schemaChanger)
 		results, err := esRunner.Deploy()
 		if err != nil {

@@ -2,6 +2,7 @@ package elastic
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -45,12 +46,17 @@ type EsSchemaChanger struct {
 }
 
 // NewEsSchemaChanger creates Elastic Search Schema changer
-func NewEsSchemaChanger(serverURL string, creds Creds) *EsSchemaChanger {
+func NewEsSchemaChanger(serverURL string, creds Creds, allowInsecure bool) *EsSchemaChanger {
 	if !strings.HasSuffix(serverURL, "/") {
 		serverURL += "/"
 	}
+
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: allowInsecure},
+	}
+
 	sc := &EsSchemaChanger{
-		HTTPClient: http.DefaultClient,
+		HTTPClient: &http.Client{Transport: tr},
 		ServerURL:  serverURL,
 		Creds:      creds,
 	}
