@@ -14,6 +14,10 @@ import (
 )
 
 var (
+	version string
+)
+
+var (
 	app         = kingpin.New("esdeploy", "A command-line deployment tool to version ElasticSearch.")
 	appUser     = app.Flag("username", "Username to authenticate with").Short('u').String()
 	appPassword = app.Flag("password", "Password to authenticat with").Short('p').String()
@@ -34,12 +38,18 @@ var (
 	seedCmd  = app.Command("seed", "Seed elastic search with data stored in json files")
 	seedURL  = seedCmd.Arg("url", "Elastic Search URL to run against").Required().String()
 	seedPath = seedCmd.Flag("folder", "Folder containing json data files").Short('f').Default(".").String()
+
+	versionCmd = app.Command("version", "Display version of esdeploy")
 )
 
 func main() {
 	var cred elastic.Creds
 
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
+	case versionCmd.FullCommand():
+		color.Cyan("version %v", version)
+		os.Exit(0)
+
 	//Validation
 	case validateCmd.FullCommand():
 		if *validatePath == "" {

@@ -52,6 +52,9 @@ Commands:
 
   seed [<flags>] <url>
     Seed elastic search with data stored in json files
+
+  version
+    Display version of esdeploy
 ```
 
 ## JS File Standard
