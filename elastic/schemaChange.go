@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -15,6 +16,7 @@ type SchemaChange struct {
 	FileName string
 	ID       string
 	Action   Action
+	Retrys   int
 }
 
 // NewSchemaChange will get keys (folder & filename)
@@ -27,11 +29,11 @@ func NewSchemaChange(file string) *SchemaChange {
 	s.Folder = folder
 	s.FileName = filename
 	s.ID = id
-	s.Action = getAction(file)
+	s.Action, s.Retrys = parseFile(file)
 	return s
 }
 
-func getAction(esFile string) Action {
+func parseFile(esFile string) (Action, int) {
 	file, err := os.Open(esFile)
 	if err != nil {
 		log.Fatal(err)
@@ -45,6 +47,11 @@ func getAction(esFile string) Action {
 	scanner.Scan()
 	url := scanner.Text()
 
+	url, retry, err := parseURL(url)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	var body bytes.Buffer
 	for scanner.Scan() {
 		body.WriteString(scanner.Text())
@@ -57,5 +64,22 @@ func getAction(esFile string) Action {
 		HTTPVerb: verb,
 		URL:      url,
 		JSON:     body.String(),
+	}, retry
+}
+
+//parseURL will take a URL and look for the retry option
+//Returns URL, retry count, error
+func parseURL(url string) (string, int, error) {
+	parts := strings.Split(url, "retry=")
+	if len(parts) == 2 {
+		//see if ?retry=x or &retry=x present
+		u := strings.TrimSuffix(parts[0], "&")
+		u = strings.TrimSuffix(u, "?")
+		retry, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return u, 0, err
+		}
+		return u, retry, nil
 	}
+	return parts[0], 0, nil
 }

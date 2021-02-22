@@ -46,6 +46,7 @@ func main() {
 	var cred elastic.Creds
 
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
+
 	case versionCmd.FullCommand():
 		color.Cyan("version %v", version)
 		os.Exit(0)
@@ -70,6 +71,7 @@ func main() {
 
 		color.Cyan("Validation completed")
 		os.Exit(exit)
+
 	//Dry run
 	case drCmd.FullCommand():
 		if *drPath == "" {
@@ -89,6 +91,7 @@ func main() {
 			color.Green("%v", r)
 		}
 		color.Cyan("Dry Run completed")
+
 	//Full deployment
 	case deployCmd.FullCommand():
 		if *dPath == "" {

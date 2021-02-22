@@ -106,18 +106,24 @@ func (s *EsSchemaChanger) Apply(sc *SchemaChange) error {
 		req.Header.Add("Content-Type", "application/json")
 	}
 
-	resp, err := s.HTTPClient.Do(req)
-	if err != nil || resp.StatusCode != 200 {
-		bodyBytes, err2 := ioutil.ReadAll(resp.Body)
-		if err2 != nil {
-			return err2
+	err := retry(sc.Retrys, time.Second, func() error {
+		resp, err := s.HTTPClient.Do(req)
+		if err != nil || resp.StatusCode != 200 {
+			bodyBytes, err2 := ioutil.ReadAll(resp.Body)
+			if err2 != nil {
+				return err2
+			}
+			bodyString := string(bodyBytes)
+			return ErrSchemaChange{
+				Message: bodyString,
+			}
 		}
-		bodyString := string(bodyBytes)
-		return ErrSchemaChange{
-			Message: bodyString,
-		}
+		defer resp.Body.Close()
+		return err
+	})
+	if err != nil {
+		return err
 	}
-	defer resp.Body.Close()
 
 	// successfully applied schema so now track its completed
 	return s.markScheamaChangeComplete(sc)
@@ -176,6 +182,18 @@ func (s *EsSchemaChanger) initialize() {
 
 }
 
+func retry(attempts int, sleep time.Duration, fn func() error) error {
+	if err := fn(); err != nil {
+
+		if attempts--; attempts > 0 {
+			time.Sleep(sleep)
+			return retry(attempts, 2*sleep, fn)
+		}
+		return err
+	}
+	return nil
+}
+
 const index = "esdeploy_v1"
 const esType = "version_info"
 const typeDefinition = `
@@ -184,9 +202,9 @@ const typeDefinition = `
 		"_id" : { "path" : "id" },
 		"properties": {
 			"id": { "type": "string", "index" : "not_analyzed" },
-			"folder": { "type": "string", "index" : "not_analyzed" },			
-			"file": { "type": "string", "index" : "not_analyzed" },			
-			"machine": { "type": "string", "index" : "not_analyzed" },		
+			"folder": { "type": "string", "index" : "not_analyzed" },
+			"file": { "type": "string", "index" : "not_analyzed" },
+			"machine": { "type": "string", "index" : "not_analyzed" },
 			"dateRunUtc": {"type": "date", "format": "dateOptionalTime", "index" : "not_analyzed" }
 		}
 	}
