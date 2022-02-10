@@ -32,11 +32,11 @@ func NewRunner(directory string, schemaChanger SchemaChanger) *Runner {
 
 // Deploy will examine all of the files, verify
 // they are valid and apply the changes to elastic search
-func (r *Runner) Deploy() ([]string, error) {
+func (r *Runner) Deploy(shards, replicas int) ([]string, error) {
 	var results []string
 	files := getFiles(r.Directory)
 	for _, file := range files {
-		s := NewSchemaChange(file)
+		s := NewSchemaChange(file, shards, replicas)
 
 		applied, err := r.SchemaChanger.WasApplied(s.ID)
 		if err != nil {
@@ -64,7 +64,7 @@ func (r *Runner) DryRun() ([]string, error) {
 	var results []string
 	files := getFiles(r.Directory)
 	for _, file := range files {
-		s := NewSchemaChange(file)
+		s := NewSchemaChange(file, -1, -1)
 		err := s.Action.Validate()
 		if err != nil {
 			return nil, err
@@ -89,7 +89,7 @@ func (r *Runner) Validate() []ValidationResult {
 	var results []ValidationResult
 	files := getFiles(r.Directory)
 	for _, file := range files {
-		s := NewSchemaChange(file)
+		s := NewSchemaChange(file, -1, -1)
 		err := s.Action.Validate()
 		if err != nil {
 			results = append(results, ValidationResult{File: file, IsValid: false})

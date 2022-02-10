@@ -62,6 +62,15 @@ Commands:
 - Second line is the partial URL to elastic resource (See example below)
 - Rest of file contains JSON used to make schema change
 
+### Options within JS file
+
+- esDeploy supports tokenizing the number of shards and replicas for the Deploy option. If you place {{shards}} or {{replicas}} tokens within your script they will be replaced with the values you pass to Deploy. If you don't specify a value, shards defaults to 5 and replicas defaults to 1 (matches ES 6 defaults)
+
+- retry option can be used for certain calls as well. This is useful if Elastic times out for a certain request or hits a deadlock. You can do this by adding a query string option to the end of the URL
+
+  Ex: my_index/_update_by_query?retry=3
+
+
 ## Examples
 
 Assuming we have the blow folder structure. This folder is only used to logically group related scripts. In this example
@@ -81,18 +90,18 @@ we are dealing with a "cars" and "boats" elastic search index.
 
 If we examine the contents of the 01.001_create_cars_index.js file we Getting
 ```
-POST
-cars/
+PUT
+_index_template/foo_template
 {
-	"settings" : {
-		"index" : {
-			"number_of_shards" : 5,
-			"number_of_replicas" : 1,
-			"mapper": {
-				"dynamic":false
-			}       
-		}
-	}
+  "index_patterns": [
+    "foo_*"
+  ],
+  "template": {
+    "settings": {
+      "index.number_of_shards": {{shards}},
+      "index.number_of_replicas": {{replicas}}
+    }
+  }
 }
 ```
 
@@ -142,12 +151,14 @@ usage: esdeploy deploy [<flags>] <url>
 Deploy elastic search changes
 
 Flags:
-      --help               Show context-sensitive help (also try --help-long and
-                           --help-man).
+      --help               Show context-sensitive help (also try --help-long and --help-man).
   -u, --username=USERNAME  Username to authenticate with
   -p, --password=PASSWORD  Password to authenticat with
+  -k, --insecure           Ignore SSL certificate warnings
   -f, --folder="."         Folder containing schema js files
   -s, --silent             Don't prompt for confirmation, run silently
+      --shards="5"         Default number of shards to use for new indexes if tokenized {{shards}}
+      --replicas="1"       Default number of shard replicas if tokenized {{replicas}}
 
 Args:
   <url>  Elastic Search URL to run against
@@ -156,6 +167,9 @@ Example:
 --------
 
 esdeploy deploy http://localhost:9200 -f ./escripts -s
+
+#for single server deployment only want single shard and zero replicas
+esdeploy deploy http://localhost:9200 -f ./escripts -s --shards=1 --replicas=0
 
 ```
 

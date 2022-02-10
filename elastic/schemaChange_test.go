@@ -38,3 +38,35 @@ func TestParseUrlNoRetry(t *testing.T) {
 	assert.Equal(t, "idm_employee_v5/_update_by_query?foo=bar", url)
 	assert.Equal(t, 0, retry)
 }
+
+func TestShardAndReplicaTokenReplacementWithNoTokens(t *testing.T) {
+	sc := NewSchemaChange("../tests/index_template.js", 2, 2)
+	assert.Contains(t, sc.Action.JSON, `"index.number_of_shards": 5`)
+	assert.Contains(t, sc.Action.JSON, `"index.number_of_replicas": 0`)
+	assert.Equal(t, 2, sc.Shards)
+	assert.Equal(t, 2, sc.Replicas)
+}
+
+func TestShardTokenReplacementWithTokens(t *testing.T) {
+	sc := NewSchemaChange("../tests/index_template_with_shards.js", 2, 2)
+	assert.Contains(t, sc.Action.JSON, `"index.number_of_shards": 2`)
+	assert.Contains(t, sc.Action.JSON, `"index.number_of_replicas": 1`)
+	assert.Equal(t, 2, sc.Shards)
+	assert.Equal(t, 2, sc.Replicas)
+}
+
+func TestReplicaTokenReplacementWithNoTokens(t *testing.T) {
+	sc := NewSchemaChange("../tests/index_template_with_replicas.js", 2, 2)
+	assert.Contains(t, sc.Action.JSON, `"index.number_of_shards": 3`)
+	assert.Contains(t, sc.Action.JSON, `"index.number_of_replicas": 2`)
+	assert.Equal(t, 2, sc.Shards)
+	assert.Equal(t, 2, sc.Replicas)
+}
+
+func TestShardAndReplicaTokenReplacementWithTokens(t *testing.T) {
+	sc := NewSchemaChange("../tests/index_template_with_shards_replicas.js", 2, 2)
+	assert.Contains(t, sc.Action.JSON, `"index.number_of_shards": 2`)
+	assert.Contains(t, sc.Action.JSON, `"index.number_of_replicas": 2`)
+	assert.Equal(t, 2, sc.Shards)
+	assert.Equal(t, 2, sc.Replicas)
+}

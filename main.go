@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/mkobaly/esdeploy/elastic"
@@ -34,6 +35,8 @@ var (
 	dURL      = deployCmd.Arg("url", "Elastic Search URL to run against").Required().String()
 	dPath     = deployCmd.Flag("folder", "Folder containing schema js files").Short('f').Default(".").String()
 	dSilent   = deployCmd.Flag("silent", "Don't prompt for confirmation, run silently").Short('s').Bool()
+	dShards   = deployCmd.Flag("shards", "Default number of shards to use for new indexes if tokenized {{shards}}").Default("5").String()
+	dReplicas = deployCmd.Flag("replicas", "Default number of shard replicas if tokenized {{replicas}}").Default("1").String()
 
 	seedCmd  = app.Command("seed", "Seed elastic search with data stored in json files")
 	seedURL  = seedCmd.Arg("url", "Elastic Search URL to run against").Required().String()
@@ -116,7 +119,16 @@ func main() {
 
 		schemaChanger := elastic.NewEsSchemaChanger(*dURL, cred, *appInsecure)
 		esRunner := elastic.NewRunner(*dPath, schemaChanger)
-		results, err := esRunner.Deploy()
+		shards, err := strconv.Atoi(*dShards)
+		if err != nil {
+			shards = -1
+		}
+		replicas, err := strconv.Atoi(*dReplicas)
+		if err != nil {
+			replicas = -1
+		}
+
+		results, err := esRunner.Deploy(shards, replicas)
 		if err != nil {
 			for _, r := range results {
 				color.Red("%v", r)
