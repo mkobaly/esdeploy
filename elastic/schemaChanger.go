@@ -95,7 +95,10 @@ func (s *EsSchemaChanger) Apply(sc *SchemaChange) error {
 	if sc.Action.JSON != "" {
 		body = bytes.NewBuffer([]byte(sc.Action.JSON))
 	}
-	req, _ := http.NewRequest(sc.Action.HTTPVerb, url, body)
+	req, err := http.NewRequest(sc.Action.HTTPVerb, url, body)
+	if err != nil {
+		return err
+	}
 	req.Header.Add("Accept", "application/json")
 
 	if s.Creds.AuthorizationNeeded() {
@@ -106,7 +109,7 @@ func (s *EsSchemaChanger) Apply(sc *SchemaChange) error {
 		req.Header.Add("Content-Type", "application/json")
 	}
 
-	err := retry(sc.Retrys, time.Second, func() error {
+	err = retry(sc.Retrys, time.Second, func() error {
 		resp, err := s.HTTPClient.Do(req)
 		if err != nil || resp.StatusCode != 200 {
 			bodyBytes, err2 := ioutil.ReadAll(resp.Body)
